@@ -7,6 +7,9 @@ from io import BytesIO
 import datetime
 from datetime import datetime
 from datetime import date
+from datetime import timedelta
+from datetime import timezone
+import calendar
 
 
 def krx_marketdata_download(data_date=None):  # Download market data for all KRX listed stocks
@@ -143,7 +146,7 @@ while start_date == 0:
         start_date = date(int(start_date_year), int(start_date_month), int(start_date_day))
     else:
         start_date_input = input("Please input again.\nDownload KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
-print("Selected start date is "+calendar.day_name[start_date.weekday()]+" "+str(start_date)+"\n")
+print("Selected start date is " + calendar.day_name[start_date.weekday()] + " " + str(start_date) + "\n")
 
 end_date = 0
 end_date_input = input("Download KRX market data up to today?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ").lower()
@@ -157,7 +160,9 @@ while end_date == 0:
         end_date = date(int(end_date_year), int(end_date_month), int(end_date_day))
     else:
         end_date_input = input("Please input again.\nDownload KRX market data up to today?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
-print("Selected end date is "+calendar.day_name[end_date.weekday()]+" "+str(end_date)+"\n")
+print("Selected end date is " + calendar.day_name[end_date.weekday()] + " " + str(end_date) + "\n")
+
+dates = pd.date_range(start=start_date, end=end_date, freq='D')
 
 # Statistics variables for download progress and sanity check
 download_count = 0
