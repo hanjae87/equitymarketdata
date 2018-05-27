@@ -98,11 +98,6 @@ def execute_sql_file(filename):
             pass
 
 
-# USER INPUT 1: Designate the dates to download market data
-start_date = date(1995, 1, 1)
-end_date = date(1996, 12, 31)
-dates = pd.date_range(start=start_date, end=end_date, freq='D')
-
 # Connecting to MySQL Schema 'marketdata' and open a cursor
 sql_host = 'localhost'
 sql_user = 'root'
@@ -128,6 +123,41 @@ GROUP BY data_date
 ;"""
 df_sqldatacount = pd.read_sql(sql, con=sqlengine)
 df_sqldatacount.set_index('data_date', inplace=True)
+
+# Date information
+today = datetime.utcnow().replace(tzinfo=timezone.utc).astimezone(tz=None).date()
+latest_sql_date = df_sqldatacount.index.max()
+print("Today is " + calendar.day_name[today.weekday()] + " " + str(today))
+print("Latest date in SQL database is " + calendar.day_name[latest_sql_date.weekday()] + " " + str(latest_sql_date))
+
+# USER INPUT 1: Designate the dates to download market data
+start_date = 0
+start_date_input = input("Download KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ").lower()    # Used week prior in case any new information has been updated
+while start_date == 0:
+    if start_date_input == "yes" or start_date_input == 'y':
+        start_date = latest_sql_date - timedelta(7)    # Timedelta used to download data beginning a week prior
+    elif start_date_input == 'no' or start_date_input == 'n':
+        start_date_year = input("Input YEAR for data download start date: ")
+        start_date_month = input("Input MONTH for data download start date: ")
+        start_date_day = input("Input DATE for data download start date: ")
+        start_date = date(int(start_date_year), int(start_date_month), int(start_date_day))
+    else:
+        start_date_input = input("Please input again.\nDownload KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
+print("Selected start date is "+calendar.day_name[start_date.weekday()]+" "+str(start_date)+"\n")
+
+end_date = 0
+end_date_input = input("Download KRX market data up to today?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ").lower()
+while end_date == 0:
+    if end_date_input == "yes" or end_date_input == 'y':
+        end_date = today
+    elif end_date_input == "no" or end_date_input == 'n':
+        end_date_year = input("Input YEAR for data download end date: ")
+        end_date_month = input("Input MONTH for data download end date: ")
+        end_date_day = input("Input DATE for data download end date: ")
+        end_date = date(int(end_date_year), int(end_date_month), int(end_date_day))
+    else:
+        end_date_input = input("Please input again.\nDownload KRX market data up to today?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
+print("Selected end date is "+calendar.day_name[end_date.weekday()]+" "+str(end_date)+"\n")
 
 # Statistics variables for download progress and sanity check
 download_count = 0
