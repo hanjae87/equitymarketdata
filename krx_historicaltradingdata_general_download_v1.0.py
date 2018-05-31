@@ -135,10 +135,10 @@ print("Latest date in SQL database is " + calendar.day_name[latest_sql_date.week
 
 # USER INPUT 1: Designate the dates to download market data
 start_date = 0
-start_date_input = input("Download KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ").lower()    # Used week prior in case any new information has been updated
+start_date_input = input("Download KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ").lower()
 while start_date == 0:
     if start_date_input == "yes" or start_date_input == 'y':
-        start_date = latest_sql_date - timedelta(7)    # Timedelta used to download data beginning a week prior
+        start_date = latest_sql_date - timedelta(7)
     elif start_date_input == 'no' or start_date_input == 'n':
         start_date_year = input("Input YEAR for data download start date: ")
         start_date_month = input("Input MONTH for data download start date: ")
@@ -168,24 +168,44 @@ dates = pd.date_range(start=start_date, end=end_date, freq='D')
 download_count = 0
 download_total = len(dates)
 sanity_check = []
+foreign_ownership_data_null = []
 
 # For Loop to go through the dates
 for data_date in dates:
     download_count += 1
     download_percentage = (download_count / download_total) * 100
     df_data = krx_marketdata_download(data_date)
+    print_info = {
+        'date': data_date.strftime('%Y-%m-%d'),
+        'day': calendar.day_name[data_date.weekday()],
+        'numtickers': len(df_data),
+        'downloadpct': download_percentage
+    }
+    if len(df_data) > 0 and len(df_data.dropna(subset=['foreign_shareholding', 'foreign_shareholding_pct'])) == 0:
+        foreign_ownership_data_null.append(data_date)
+        df_data.dropna(subset=['foreign_shareholding', 'foreign_shareholding_pct'], inplace=True)
+        print("{date}{day:>10}:{numtickers:6d}{downloadpct:10.3f}% Foreign Ownership Information Not Yet Updated".format(**print_info))
+        continue
     if data_date.date() in df_sqldatacount.index:
-        print("{a}:{b:6d}{c:10.3f}% Exists in Database".format(a=data_date.strftime('%Y%m%d'), b=len(df_data), c=download_percentage))
+        print("{date}{day:>10}:{numtickers:6d}{downloadpct:10.3f}% Exists in Database".format(**print_info))
         if len(df_data) != df_sqldatacount.loc[data_date.date()][0]:
             sanity_check.append(data_date)
     elif len(df_data) == 0:
-        print("{a}:{b:6d}{c:10.3f}% No Trading Day".format(a=data_date.strftime('%Y%m%d'), b=len(df_data), c=download_percentage))
+        print("{date}{day:>10}:{numtickers:6d}{downloadpct:10.3f}% No Trading Day".format(**print_info))
     else:
         df_data.to_sql(name='krxmarketdata', con=sqlengine, if_exists='append', index=False)
-        print("{a}:{b:6d}{c:10.3f}% Downloaded".format(a=data_date.strftime('%Y%m%d'), b=len(df_data), c=download_percentage))
+        print("{date}{day:>10}:{numtickers:6d}{downloadpct:10.3f}% Downloaded".format(**print_info))
 
-print("Download Complete")
+print("\nDownload Complete\n")
 if len(sanity_check) == 0:
-    print('Sanity Check Cleared')
+    print("Sanity Check Cleared\n")
 else:
+    print("Check data for following dates\n")
     print(sanity_check)
+    print("\n")
+if len(foreign_ownership_data_null) == 0:
+    print("All Downloaded Data includes Foreign Ownership Information\n")
+else:
+    print("Foreign Ownership data missing for following dates. Did not download market trading data in SQL\n")
+    print(foreign_ownership_data_null)
+    print("\n")
