@@ -101,6 +101,20 @@ def execute_sql_file(filename):
             pass
 
 
+def date_input(prompt_year, prompt_month, prompt_day, prompt_error):
+    while True:
+        ui_year = input(prompt_year)
+        ui_month = input(prompt_month)
+        ui_day = input(prompt_day)
+        try:
+            ui_date = date(int(ui_year), int(ui_month), int(ui_day))
+        except ValueError:
+            print(prompt_error)
+            continue
+        break
+    return (ui_date)
+
+
 # Connecting to MySQL Schema 'marketdata' and open a cursor
 sql_host = 'localhost'
 sql_user = 'root'
@@ -140,10 +154,7 @@ while start_date == 0:
     if start_date_input == "yes" or start_date_input == 'y':
         start_date = latest_sql_date - timedelta(7)
     elif start_date_input == 'no' or start_date_input == 'n':
-        start_date_year = input("Input YEAR for data download start date: ")
-        start_date_month = input("Input MONTH for data download start date: ")
-        start_date_day = input("Input DATE for data download start date: ")
-        start_date = date(int(start_date_year), int(start_date_month), int(start_date_day))
+        start_date = date_input(prompt_year="Input YEAR for data download start date: ", prompt_month="Input MONTH for data download start date: ", prompt_day="Input DAY for data download start date: ", prompt_error="Incorrect date. Please input the date again.\n")
     else:
         start_date_input = input("Please input again.\nDownload KRX market data from a week before the latest date in SQL database?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
 print("Selected start date is " + calendar.day_name[start_date.weekday()] + " " + str(start_date) + "\n")
@@ -154,10 +165,7 @@ while end_date == 0:
     if end_date_input == "yes" or end_date_input == 'y':
         end_date = today
     elif end_date_input == "no" or end_date_input == 'n':
-        end_date_year = input("Input YEAR for data download end date: ")
-        end_date_month = input("Input MONTH for data download end date: ")
-        end_date_day = input("Input DATE for data download end date: ")
-        end_date = date(int(end_date_year), int(end_date_month), int(end_date_day))
+        end_date = date_input(prompt_year="Input YEAR for data download end date: ", prompt_month="Input MONTH for data download end date: ", prompt_day="Input DAY for data download end date: ", prompt_error="Incorrect date. Please input the date again.\n")
     else:
         end_date_input = input("Please input again.\nDownload KRX market data up to today?\nInput 'Yes' (or 'Y') or 'No' (or 'N'): ")
 print("Selected end date is " + calendar.day_name[end_date.weekday()] + " " + str(end_date) + "\n")
@@ -196,16 +204,14 @@ for data_date in dates:
         df_data.to_sql(name='krxmarketdata', con=sqlengine, if_exists='append', index=False)
         print("{date}{day:>10}:{numtickers:6d}{downloadpct:10.3f}% Downloaded".format(**print_info))
 
-print("\nDownload Complete\n")
+print("\nDownload Complete")
 if len(sanity_check) == 0:
-    print("Sanity Check Cleared\n")
+    print("Sanity Check Cleared")
 else:
-    print("Check data for following dates\n")
+    print("Check data for following dates")
     print(sanity_check)
-    print("\n")
 if len(foreign_ownership_data_null) == 0:
-    print("All Downloaded Data includes Foreign Ownership Information\n")
+    print("All Downloaded Data includes Foreign Ownership Information")
 else:
-    print("Foreign Ownership data missing for following dates. Did not download market trading data in SQL\n")
+    print("Foreign Ownership data missing for following dates. Did not download market trading data in SQL")
     print(foreign_ownership_data_null)
-    print("\n")
